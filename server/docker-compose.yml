@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: hotel_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d hotel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/hotel_db?schema=public
+    volumes:
+      - /app/node_modules
+    command: sh -c "npx prisma generate && npm run start:dev"
+    working_dir: /app
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./src
+          target: /app/src
+        - action: sync+restart
+          path: ./package.json
+          target: /app/package.json
+        - action: sync+restart
+          path: ./tsconfig.json
+          target: /app/tsconfig.json
+        # Optional:
+        # - action: sync+restart
+        #   path: ./.env
+        #   target: /app/.env
+
+volumes:
+  db_data:
