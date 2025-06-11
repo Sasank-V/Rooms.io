@@ -10,7 +10,7 @@ export default function Home() {
       <Stack.Screen options={{ title: 'Tab One' }} />
       <View style={styles.container}>
         <ScreenContent path="app/(tabs)/index.tsx" title="Tab One" />
-        <Text className="bg-blue-600 text-white">Hello World</Text>
+        <Text className="bg-blue-600 text-white">Hello World - Client Branch</Text>
       </View>
     </>
   );
