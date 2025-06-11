@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Hotel Management Backend (TypeScript) is running!");
+  res.send("Hotel Management Backend (TypeScript) is running! - Server Branch");
 });
 
 app.listen(PORT, () => {
