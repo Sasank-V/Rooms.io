@@ -1,14 +1,168 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // or mysql/sqlite as per your setup
   url      = env("DATABASE_URL")
+}
+
+enum RoomStatus {
+  AVAILABLE
+  CLEANING
+  MAINTENANCE
+  OCCUPIED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum WorkingStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum ChargeType {
+  ADVANCE
+  CHECKOUT
+  FOOD
+  EXTRA
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+model Room {
+  id            String     @id @default(uuid())
+  roomNumber    String
+  floor         Int
+  basePrice     Float
+  advanceAmount Float
+  taxRate       Float
+  maxAdults     Int
+  maxChildren   Int
+  amenities     String[] // custom-defined by admin
+  roomImage     String
+  status        RoomStatus
+  isAC          Boolean
+  roomType      String // reference to Hotel.roomTypes[]
+  hotelId       String
+  hotel         Hotel      @relation(fields: [hotelId], references: [id])
+  bookings      Booking[]
+}
+
+model Guest {
+  id               String    @id @default(uuid())
+  firstName        String
+  lastName         String
+  phoneNumber      String
+  aadharNumber     String
+  email            String?
+  gender           Gender
+  dateOfBirth      DateTime
+  age              Int
+  address          String
+  aadharPhotoFront String
+  aadharPhotoBack  String
+  facePhoto        String
+  bookings         Booking[]
+  payments         Payment[]
+}
+
+model Hotel {
+  id                String   @id @default(uuid())
+  hotelName         String
+  hotelEmail        String
+  phone             String
+  address           String
+  city              String
+  state             String
+  pincode           String
+  gstin             String
+  logo              String
+  emailNotification Boolean
+  smsNotification   Boolean
+  dailyReports      Boolean
+  amenities         String[]
+  licenseKey        String
+  upiId             String
+  roomTypes         String[] // custom-defined
+  rooms             Room[]
+}
+
+model User {
+  id            String        @id @default(uuid())
+  firstName     String
+  lastName      String
+  phone         String
+  email         String
+  aadharNumber  String
+  workingStatus WorkingStatus
+  role          Role
+  password      String
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  bookings      Booking[]     @relation("StaffBookings")
+  payments      Payment[]
+  expenses      Expense[]
+}
+
+model Booking {
+  id         String   @id @default(uuid())
+  fromDate   DateTime
+  fromTime   String
+  toDate     DateTime
+  toTime     String
+  amountPaid Float
+  paymentIds String[]
+  roomId     String
+  guestId    String
+  staffId    String
+
+  room  Room  @relation(fields: [roomId], references: [id])
+  guest Guest @relation(fields: [guestId], references: [id])
+  staff User  @relation("StaffBookings", fields: [staffId], references: [id])
+}
+
+model Payment {
+  id         String        @id @default(uuid())
+  guestId    String
+  staffId    String
+  chargeType ChargeType
+  amount     Float
+  method     PaymentMethod
+  date       DateTime
+  time       String
+  status     PaymentStatus
+
+  guest Guest @relation(fields: [guestId], references: [id])
+  staff User  @relation(fields: [staffId], references: [id])
+}
+
+model Expense {
+  id      String   @id @default(uuid())
+  staffId String
+  amount  Float
+  date    DateTime
+  time    String
+  reason  String
+
+  staff User @relation(fields: [staffId], references: [id])
 }
