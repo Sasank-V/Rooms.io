@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // or mysql/sqlite as per your setup
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -50,95 +50,105 @@ enum PaymentStatus {
 
 model Room {
   id            String     @id @default(uuid())
-  roomNumber    String
-  floor         Int
-  basePrice     Float
-  advanceAmount Float
-  taxRate       Float
-  maxAdults     Int
-  maxChildren   Int
-  amenities     String[] // custom-defined by admin
-  roomImage     String
-  status        RoomStatus
+  roomNumber    String     @db.VarChar(10) // Room numbers like "101"
+  floor         String     @db.VarChar(5)
+  basePrice     Float      @default(0.0)
+  advanceAmount Float      @default(0.0)
+  taxRate       Float      @default(0.0)
+  maxAdults     Int        @default(2)
+  maxChildren   Int        @default(0)
+  amenities     String[]   @default([])
+  roomImage     String?    @db.Text
+  status        RoomStatus @default(AVAILABLE)
   isAC          Boolean
-  roomType      String // reference to Hotel.roomTypes[]
+  roomType      String     @db.VarChar(50)
   hotelId       String
   hotel         Hotel      @relation(fields: [hotelId], references: [id])
   bookings      Booking[]
+  Alert         Alert[]
+
+  @@unique([floor, roomNumber])
 }
 
 model Guest {
   id               String    @id @default(uuid())
-  firstName        String
-  lastName         String
-  phoneNumber      String
-  aadharNumber     String
-  email            String?
+  firstName        String    @db.VarChar(50)
+  lastName         String    @db.VarChar(50)
+  phoneNumber      String    @db.VarChar(15) // Should validate format at application level
+  aadharNumber     String    @unique @db.VarChar(12) // Aadhar is 12 digits
+  email            String?   @db.VarChar(100)
   gender           Gender
   dateOfBirth      DateTime
   age              Int
-  address          String
-  aadharPhotoFront String
+  address          String    @db.Text
+  aadharPhotoFront String // URL/path
   aadharPhotoBack  String
   facePhoto        String
   bookings         Booking[]
   payments         Payment[]
+  Alert            Alert[]
 }
 
 model Hotel {
-  id                String   @id @default(uuid())
-  hotelName         String
-  hotelEmail        String
-  phone             String
-  address           String
-  city              String
-  state             String
-  pincode           String
-  gstin             String
+  id                String    @id @default(uuid())
+  hotelName         String    @db.VarChar(100)
+  hotelEmail        String    @db.VarChar(100)
+  phone             String    @db.VarChar(15)
+  address           String    @db.Text
+  city              String    @db.VarChar(50)
+  state             String    @db.VarChar(50)
+  pincode           String    @db.VarChar(10)
+  gstin             String    @db.VarChar(15)
   logo              String
-  emailNotification Boolean
-  smsNotification   Boolean
-  dailyReports      Boolean
-  amenities         String[]
-  licenseKey        String
-  upiId             String
-  roomTypes         String[] // custom-defined
+  emailNotification Boolean   @default(true)
+  smsNotification   Boolean   @default(true)
+  dailyReports      Boolean   @default(true)
+  amenities         String[]  @default([])
+  licenseKey        String    @db.VarChar(100)
+  upiId             String    @db.VarChar(50)
+  roomTypes         String[]  @default([])
   rooms             Room[]
+  bookings          Booking[]
 }
 
 model User {
   id            String        @id @default(uuid())
-  firstName     String
-  lastName      String
-  phone         String
-  email         String
-  aadharNumber  String
-  workingStatus WorkingStatus
+  firstName     String        @db.VarChar(50)
+  lastName      String        @db.VarChar(50)
+  phone         String        @unique @db.VarChar(15)
+  email         String        @db.VarChar(100)
+  aadharNumber  String        @db.VarChar(12)
+  workingStatus WorkingStatus @default(ACTIVE)
   role          Role
-  password      String
-  accessToken   String
-  refreshToken  String
+  password      String        @db.VarChar(100) // Store hashed
+  accessToken   String        @db.Text
+  refreshToken  String        @db.Text
   expiresAt     DateTime
   bookings      Booking[]     @relation("StaffBookings")
   payments      Payment[]
   expenses      Expense[]
+  AuditLog      AuditLog[]
+  Alert         Alert[]
 }
 
 model Booking {
   id         String   @id @default(uuid())
   fromDate   DateTime
-  fromTime   String
+  fromTime   String   @db.VarChar(10) // "HH:MM"
   toDate     DateTime
-  toTime     String
-  amountPaid Float
-  paymentIds String[]
+  toTime     String   @db.VarChar(10)
+  amountPaid Float    @default(0.0)
+  paymentIds String[] @default([])
   roomId     String
   guestId    String
   staffId    String
+  hotelId    String?
 
-  room  Room  @relation(fields: [roomId], references: [id])
-  guest Guest @relation(fields: [guestId], references: [id])
-  staff User  @relation("StaffBookings", fields: [staffId], references: [id])
+  room  Room    @relation(fields: [roomId], references: [id])
+  guest Guest   @relation(fields: [guestId], references: [id])
+  staff User    @relation("StaffBookings", fields: [staffId], references: [id])
+  Hotel Hotel?  @relation(fields: [hotelId], references: [id])
+  Alert Alert[]
 }
 
 model Payment {
@@ -146,10 +156,10 @@ model Payment {
   guestId    String
   staffId    String
   chargeType ChargeType
-  amount     Float
+  amount     Float         @default(0.0)
   method     PaymentMethod
   date       DateTime
-  time       String
+  time       String        @db.VarChar(10) // "HH:MM"
   status     PaymentStatus
 
   guest Guest @relation(fields: [guestId], references: [id])
@@ -159,10 +169,52 @@ model Payment {
 model Expense {
   id      String   @id @default(uuid())
   staffId String
-  amount  Float
+  amount  Float    @default(0.0)
   date    DateTime
-  time    String
-  reason  String
+  time    String   @db.VarChar(10)
+  reason  String   @db.Text
 
   staff User @relation(fields: [staffId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String // e.g: CREATE_ROOM, UPDATE_GUEST, DELETE_BOOKING
+  entity      String // e.g: "Room", "Guest", "Payment"
+  entityId    String // the ID of the entity being acted on
+  userId      String? // Nullable for system-generated actions
+  user        User?    @relation(fields: [userId], references: [id])
+  timestamp   DateTime @default(now())
+  description String // What changed (can be a JSON string or description)
+}
+
+enum AlertType {
+  WAKE_UP_CALL
+  CLEANING_REMINDER
+  ADVANCE_EXPIRY
+  ROOM_CHANGE_REQUEST
+  SPECIAL_REQUEST
+  CHECKOUT_REMINDER
+  SHIFT_ALERT
+}
+
+model Alert {
+  id          String    @id @default(uuid())
+  type        AlertType
+  message     String    @db.Text
+  triggerTime DateTime
+  isRead      Boolean   @default(false)
+  resolved    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  guestId   String?
+  bookingId String?
+  roomId    String?
+  staffId   String?
+
+  guest   Guest?   @relation(fields: [guestId], references: [id])
+  booking Booking? @relation(fields: [bookingId], references: [id])
+  room    Room?    @relation(fields: [roomId], references: [id])
+  staff   User?    @relation(fields: [staffId], references: [id])
 }
