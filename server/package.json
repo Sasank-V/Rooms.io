@@ -8,7 +8,8 @@
   "start:dev": "ts-node src/index.ts",
   "prisma:generate": "npx prisma generate",
   "prisma:migrate": "npx prisma migrate dev --name init",
-  "dev": "npx prisma generate && npx prisma migrate dev --name init && ts-node src/index.ts"
+  "dev:init": "npx prisma generate && npx prisma migrate dev --name init",
+"dev": "npm run dev:init && nodemon --legacy-watch --watch src --ext ts,json --exec ts-node src/index.ts"
 },
   "type": "commonjs",
   "keywords": [],
