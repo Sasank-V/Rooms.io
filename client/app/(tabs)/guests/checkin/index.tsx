@@ -27,6 +27,12 @@ const CheckinIndex = () => {
         className="mt-10 self-center rounded-lg bg-blue-600 px-6 py-4">
         <Text className="text-base font-semibold text-white">Start Check-In</Text>
       </Pressable>
+
+      <View className="mt-10 flex-row justify-center gap-4">
+        <Pressable className="rounded-lg bg-blue-600 px-6 py-3" onPress={() => router.back()}>
+          <Text className="text-base font-semibold text-white">Back</Text>
+        </Pressable>
+      </View>
     </View>
   );
 };

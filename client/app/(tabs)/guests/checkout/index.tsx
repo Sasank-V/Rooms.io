@@ -3,7 +3,7 @@ import React from 'react';
 import { router } from 'expo-router';
 import { CheckOutStages } from '~/constants/stages';
 
-const guestId = '101';
+const guestId = '101'; // 🔁 Replace with dynamic value in real app
 
 const CheckOutIndex = () => {
   return (
