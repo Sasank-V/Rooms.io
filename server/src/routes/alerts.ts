@@ -27,8 +27,9 @@ router.get('/', async (req, res, next) => {
           room: true,
           staff: true
         },
-        orderBy: {
-          triggerTime: 'asc'
+          orderBy: {
+            triggerTime: 'asc'
+        
         }
       }),
       prisma.alert.count({
