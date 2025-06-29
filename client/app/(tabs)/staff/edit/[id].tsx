@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -14,10 +13,10 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native"
-import { router } from "expo-router"
+import { useLocalSearchParams, router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import { StaffProvider, useStaff } from "../../../contexts/StaffContext"
+import { StaffProvider, useStaff, type StaffData } from "../../../../contexts/StaffContext"
 
 const ROLES = [
   { id: "admin", label: "Admin", icon: "shield-checkmark-outline", color: "#dc2626" },
@@ -34,21 +33,42 @@ const STATUS_OPTIONS = [
   { id: "on-leave", label: "On Leave", color: "#f59e0b", icon: "time-outline" },
 ]
 
-function AddStaffContent() {
-  const { addStaff } = useStaff()
-  const [staff, setStaff] = useState({
+function EditStaffContent() {
+  const { id } = useLocalSearchParams()
+  const { getStaffById, updateStaff, deleteStaff, loading: contextLoading } = useStaff()
+  const [staff, setStaff] = useState<StaffData>({
+    id: "",
     name: "",
     phone: "",
     email: "",
     aadhaar: "",
-    role: "Staff",
-    status: "Active",
+    role: "",
+    status: "",
   })
 
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!contextLoading && typeof id === "string") {
+      const found = getStaffById(id)
+      if (found) {
+        setStaff({ ...found })
+        setLoading(false)
+        console.log("Loaded staff for editing:", found.name)
+      } else {
+        Alert.alert("Error", "Staff member not found", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ])
+      }
+    }
+  }, [id, getStaffById, contextLoading])
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
@@ -80,27 +100,67 @@ function AddStaffContent() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!validateForm()) {
       Alert.alert("Validation Error", "Please fix the errors and try again")
       return
     }
 
+    if (typeof id !== "string") return
+
     try {
       setSaving(true)
-      await addStaff(staff)
-      Alert.alert("Success", "Staff member added successfully and saved to database!", [
+      await updateStaff(id, staff)
+      Alert.alert("Success", "Staff details updated successfully and saved to database!", [
         {
           text: "OK",
           onPress: () => router.back(),
         },
       ])
     } catch (error) {
-      Alert.alert("Error", "Failed to add staff member. Please try again.")
-      console.error("Add staff error:", error)
+      Alert.alert("Error", "Failed to update staff details. Please try again.")
+      console.error("Update staff error:", error)
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDelete = () => {
+    Alert.alert("Delete Staff Member", `Are you sure you want to delete ${staff.name}? This action cannot be undone.`, [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (typeof id === "string") {
+            try {
+              await deleteStaff(id)
+              Alert.alert("Success", "Staff member deleted successfully from database!", [
+                {
+                  text: "OK",
+                  onPress: () => router.back(),
+                },
+              ])
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete staff member. Please try again.")
+              console.error("Delete staff error:", error)
+            }
+          }
+        },
+      },
+    ])
+  }
+
+  if (loading || contextLoading) {
+    return (
+      <View className="flex-1 bg-gray-50 justify-center items-center">
+        <ActivityIndicator size="large" color="#667eea" />
+        <Text className="text-gray-500 text-lg mt-4">Loading staff details...</Text>
+      </View>
+    )
   }
 
   const selectedRole = ROLES.find((r) => r.label === staff.role) || ROLES[1]
@@ -193,9 +253,15 @@ function AddStaffContent() {
             <Ionicons name="arrow-back" size={24} color="white" />
           </Pressable>
           <View className="flex-1">
-            <Text className="text-3xl font-bold text-white">Add New Staff</Text>
-            <Text className="text-blue-100 mt-1">Create a new staff member profile</Text>
+            <Text className="text-3xl font-bold text-white">Edit Staff</Text>
+            <Text className="text-blue-100 mt-1">Update {staff.name}'s details</Text>
           </View>
+          <Pressable
+            onPress={handleDelete}
+            className="w-12 h-12 bg-red-500/20 rounded-full items-center justify-center"
+          >
+            <Ionicons name="trash-outline" size={20} color="#ef4444" />
+          </Pressable>
         </View>
       </LinearGradient>
 
@@ -358,39 +424,39 @@ function AddStaffContent() {
         </View>
 
         {/* Action Buttons */}
-        <View className="flex-row space-x-1 mb-8 gap-1">
-        {/* Cancel Button */}
-        <Pressable
-          onPress={() => router.back()}
-          disabled={saving}
-          className="flex-1 bg-gray-200 rounded-2xl py-4 items-center justify-center"
-        >
-          <Text className="text-gray-700 font-bold text-lg">Cancel</Text>
-        </Pressable>
+        <View className="flex-row space-x-4 mb-8 gap-1">
+            {/* Cancel Button */}
+            <Pressable
+              onPress={() => router.back()}
+              disabled={saving}
+              className="flex-1 bg-gray-200 rounded-2xl py-4 items-center justify-center"
+            >
+              <Text className="text-gray-700 font-bold text-lg">Cancel</Text>
+            </Pressable>
 
-        {/* Add Staff Button */}
-        <Pressable
-          onPress={handleAdd}
-          disabled={saving}
-          className="flex-1 rounded-2xl overflow-hidden"
-        >
-          <LinearGradient
-            colors={["#667eea", "#764ba2"]}
-            className="py-4 px-4 items-center justify-center rounded-2xl"
-          >
-            <View className="flex-row items-center justify-center">
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="add-circle-outline" size={20} color="white" />
-              )}
-              <Text className="text-white font-bold text-base ml-2">
-                {saving ? "Saving..." : "Add Staff"}
-              </Text>
-            </View>
-          </LinearGradient>
-        </Pressable>
-      </View>
+            {/* Save Button */}
+            <Pressable
+              onPress={handleSave}
+              disabled={saving}
+              className="flex-1 rounded-2xl overflow-hidden"
+            >
+              <LinearGradient
+                colors={["#667eea", "#764ba2"]}
+                className="py-4 px-4 items-center justify-center rounded-2xl"
+              >
+                <View className="flex-row items-center justify-center">
+                  {saving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="checkmark-circle-outline" size={20} color="white" />
+                  )}
+                  <Text className="text-white font-bold text-base ml-2">
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Text>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </View>
 
       </ScrollView>
 
@@ -400,10 +466,10 @@ function AddStaffContent() {
   )
 }
 
-export default function AddStaffScreen() {
+export default function EditStaffScreen() {
   return (
     <StaffProvider>
-      <AddStaffContent />
+      <EditStaffContent />
     </StaffProvider>
   )
 }
