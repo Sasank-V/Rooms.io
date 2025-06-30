@@ -1,5 +1,6 @@
-import { sqliteTable, text, integer, real, blob, unique, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, unique } from 'drizzle-orm/sqlite-core';
 import { relations, sql } from 'drizzle-orm';
+
 
 // Enums - SQLite doesn't have native enums, so we use text with type constraints
 export const userRoleEnum = ['ADMIN', 'FRONT_DESK', 'HOUSEKEEPING', 'MANAGER'] as const;
@@ -33,15 +34,12 @@ export const users = sqliteTable('users', {
     .$defaultFn(() => crypto.randomUUID()),
   firstName: text('first_name', { length: 50 }).notNull(),
   lastName: text('last_name', { length: 50 }).notNull(),
-  phone: text('phone', { length: 15 }).unique().notNull(),
+  phone: text('phone', { length: 10 }).unique().notNull(),
   email: text('email', { length: 100 }).notNull(),
   aadharNumber: text('aadhar_number', { length: 12 }).notNull(),
   workingStatus: text('working_status', { enum: workingStatusEnum }).default('ACTIVE').notNull(),
   role: text('role', { enum: userRoleEnum }).notNull(),
   password: text('password', { length: 100 }).notNull(),
-  accessToken: text('access_token').notNull(),
-  refreshToken: text('refresh_token').notNull(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
 });
 
 // Shifts table
