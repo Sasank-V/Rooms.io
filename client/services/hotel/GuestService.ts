@@ -2,7 +2,7 @@ import { db } from '~/database';
 import { guests } from '~/database/schema';
 import { sendResponse, ServiceResponse } from '~/services/response';
 import { AuditLogService } from '~/services/audit/AuditLogService';
-import { GuestListResponse, GuestDetailResponse } from '~/types/guest';
+import { GuestListResponse, GuestDetailResponse, GuestCreateInput, GuestUpdateInput } from '~/types/guest';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -75,7 +75,7 @@ export class GuestService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<GuestDetailResponse>
    */
-  static async registerGuest(guestData: any, userId: string): Promise<ServiceResponse<GuestDetailResponse>> {
+  static async registerGuest(guestData: GuestCreateInput, userId: string): Promise<ServiceResponse<GuestDetailResponse>> {
     try {
       const [insertedGuest] = await db.insert(guests).values(guestData).returning();
       await AuditLogService.logAction({
@@ -106,7 +106,7 @@ export class GuestService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<GuestDetailResponse>
    */
-  static async updateGuest(id: string, guestData: any, userId: string): Promise<ServiceResponse<GuestDetailResponse>> {
+  static async updateGuest(id: string, guestData: GuestUpdateInput, userId: string): Promise<ServiceResponse<GuestDetailResponse>> {
     try {
       const [updatedGuest] = await db.update(guests).set(guestData).where(eq(guests.id, id)).returning();
       await AuditLogService.logAction({

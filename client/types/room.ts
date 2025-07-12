@@ -6,4 +6,7 @@ export interface RoomListResponse {
 
 export interface RoomDetailResponse {
   room: Room;
-} 
+}
+
+export type RoomCreateInput = import('~/database/types').NewRoom;
+export type RoomUpdateInput = Partial<import('~/database/types').NewRoom>; 

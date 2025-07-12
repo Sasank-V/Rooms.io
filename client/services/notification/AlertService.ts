@@ -2,7 +2,7 @@ import { db } from '~/database';
 import { alerts } from '~/database/schema';
 import { sendResponse, ServiceResponse } from '~/services/response';
 import { AuditLogService } from '~/services/audit/AuditLogService';
-import { AlertListResponse, AlertDetailResponse } from '~/types/alert';
+import { AlertListResponse, AlertDetailResponse, AlertCreateInput } from '~/types/alert';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -45,7 +45,7 @@ export class AlertService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<AlertDetailResponse>
    */
-  static async createAlert(alertData: any, userId: string): Promise<ServiceResponse<AlertDetailResponse>> {
+  static async createAlert(alertData: AlertCreateInput, userId: string): Promise<ServiceResponse<AlertDetailResponse>> {
     try {
       const [insertedAlert] = await db.insert(alerts).values(alertData).returning();
       await AuditLogService.logAction({

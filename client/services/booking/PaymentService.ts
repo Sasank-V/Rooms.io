@@ -2,7 +2,7 @@ import { db } from '~/database';
 import { payments } from '~/database/schema';
 import { sendResponse, ServiceResponse } from '~/services/response';
 import { AuditLogService } from '~/services/audit/AuditLogService';
-import { PaymentListResponse, PaymentDetailResponse } from '~/types/payment';
+import { PaymentListResponse, PaymentDetailResponse, PaymentCreateInput, PaymentUpdateInput } from '~/types/payment';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -75,7 +75,7 @@ export class PaymentService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<PaymentDetailResponse>
    */
-  static async recordPayment(paymentData: any, userId: string): Promise<ServiceResponse<PaymentDetailResponse>> {
+  static async recordPayment(paymentData: PaymentCreateInput, userId: string): Promise<ServiceResponse<PaymentDetailResponse>> {
     try {
       const [insertedPayment] = await db.insert(payments).values(paymentData).returning();
       await AuditLogService.logAction({
@@ -106,7 +106,7 @@ export class PaymentService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<PaymentDetailResponse>
    */
-  static async updatePayment(id: string, paymentData: any, userId: string): Promise<ServiceResponse<PaymentDetailResponse>> {
+  static async updatePayment(id: string, paymentData: PaymentUpdateInput, userId: string): Promise<ServiceResponse<PaymentDetailResponse>> {
     try {
       const [updatedPayment] = await db.update(payments).set(paymentData).where(eq(payments.id, id)).returning();
       await AuditLogService.logAction({

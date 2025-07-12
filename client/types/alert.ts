@@ -6,4 +6,6 @@ export interface AlertListResponse {
 
 export interface AlertDetailResponse {
   alert: Alert;
-} 
+}
+
+export type AlertCreateInput = import('~/database/types').NewAlert; 

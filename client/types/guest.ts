@@ -6,4 +6,7 @@ export interface GuestListResponse {
 
 export interface GuestDetailResponse {
   guest: Guest;
-} 
+}
+
+export type GuestCreateInput = import('~/database/types').NewGuest;
+export type GuestUpdateInput = Partial<import('~/database/types').NewGuest>; 

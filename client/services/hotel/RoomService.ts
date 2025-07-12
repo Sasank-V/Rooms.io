@@ -2,7 +2,7 @@ import { db } from '~/database';
 import { rooms } from '~/database/schema';
 import { sendResponse, ServiceResponse } from '~/services/response';
 import { AuditLogService } from '~/services/audit/AuditLogService';
-import { RoomListResponse, RoomDetailResponse } from '~/types/room';
+import { RoomListResponse, RoomDetailResponse, RoomCreateInput, RoomUpdateInput } from '~/types/room';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -76,7 +76,7 @@ export class RoomService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<RoomDetailResponse>
    */
-  static async addRoom(roomData: any, userId: string): Promise<ServiceResponse<RoomDetailResponse>> {
+  static async addRoom(roomData: RoomCreateInput, userId: string): Promise<ServiceResponse<RoomDetailResponse>> {
     try {
       const [insertedRoom] = await db.insert(rooms).values(roomData).returning();
       await AuditLogService.logAction({
@@ -107,7 +107,7 @@ export class RoomService {
    * @param userId - Acting user ID
    * @returns ServiceResponse<RoomDetailResponse>
    */
-  static async updateRoom(id: string, roomData: any, userId: string): Promise<ServiceResponse<RoomDetailResponse>> {
+  static async updateRoom(id: string, roomData: RoomUpdateInput, userId: string): Promise<ServiceResponse<RoomDetailResponse>> {
     try {
       const [updatedRoom] = await db.update(rooms).set(roomData).where(eq(rooms.id, id)).returning();
       await AuditLogService.logAction({
